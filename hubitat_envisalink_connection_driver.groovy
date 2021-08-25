@@ -29,7 +29,7 @@
 
 import groovy.transform.Field
 
-def version() { return "Envisalink 0.8.4" }
+def version() { return "Envisalink 0.8.5" }
 metadata {
 		definition (name: "Envisalink Connection", 
 			namespace: "dwb", 
@@ -81,7 +81,8 @@ metadata {
 			input("passwd", "text", title: "Password", required: true)
 			input("masterCode", "text", title: "Master Code", required: true)
 			input("installerCode", "text", title: "Installer Code", description: "Installer Code is required if you wish to program the panel from this driver", required: false)
-			def pollRate = ["0" : "Disabled", "1" : "Poll every minute", "5" : "Poll every 5 minutes", "10" : "Poll every 10 minutes", "15" : "Poll every 15 minutes", "30" : "Poll every 30 minutes (not recommended)"]
+            input("disablePartReady", "bool", title: "Disable Force Arming Enabled", description: "Removes Partition Ready Message", defaultVale: true)
+            def pollRate = ["0" : "Disabled", "1" : "Poll every minute", "5" : "Poll every 5 minutes", "10" : "Poll every 10 minutes", "15" : "Poll every 15 minutes", "30" : "Poll every 30 minutes (not recommended)"]
 			input ("poll_Rate", "enum", title: "Device Poll Rate", options: pollRate, defaultValue: 0)
 			if (installerCode) {
 				def delayOptions = ["030" : "30 seconds", "045" : "45 seconds", "060" : "60 seconds", "090" : "90 seconds", "120" : "120 seconds"]
@@ -1099,7 +1100,7 @@ private partitionNotReady(){
 
 private partitionReadyForForcedArmEnabled(){
 	ifDebug("partitionReadyForForcedArmEnabled")
-	if (device.currentValue("Status") != PARTITIONNOTREADYFORCEARMINGENABLED) { send_Event(name:"Status", value: PARTITIONNOTREADYFORCEARMINGENABLED, isStateChange: true) }
+	if (!disablePartReady && (device.currentValue("Status") != PARTITIONNOTREADYFORCEARMINGENABLED)) { send_Event(name:"Status", value: PARTITIONNOTREADYFORCEARMINGENABLED, isStateChange: true) }
 	if (device.currentValue("contact") != "closed") { send_Event(name:"contact", value: "closed") }
 }
 
@@ -2112,6 +2113,9 @@ private send_Event(evnt) {
 ]
 
 /***********************************************************************************************************************
+* version 0.8.5
+*   Reactivate Not ready status
+*   Add deisable Partition ready status option
 * Version: 0.8.4
 *   mark.labuda Added ArmNight code for DSC panel
 * 
