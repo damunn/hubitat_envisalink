@@ -1091,8 +1091,8 @@ private partitionNotReady(){
     //def st = device.currentValue("Status")
     //def sw = device.currentValue("switch")
     //def co = device.currentValue("contact")
-	//if (device.currentValue("Status") != PARTITIONNOTREADY) { send_Event(name:"Status", value: PARTITIONNOTREADY, isStateChange: true) }
-	//if (device.currentValue("contact") != "closed") { send_Event(name:"contact", value: "closed", isStateChange: true) }
+	if (device.currentValue("Status") != PARTITIONNOTREADY) { send_Event(name:"Status", value: PARTITIONNOTREADY, isStateChange: true) }
+	if (device.currentValue("contact") != "closed") { send_Event(name:"contact", value: "closed", isStateChange: true) }
     //log.info "partitionNotReady() state.armState = $state.armState: Status: $st switch: $sw contact: $co"
 
 }
