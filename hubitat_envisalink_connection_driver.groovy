@@ -114,21 +114,34 @@ def installed() {
 }
 
 def updated() {
-	state.debug = isDebug
+	if((state.debug != isDebug) && !isDisabled) {
+		log.info("Debug is $isDebug")
+		state.debug = isDebug
+		return
+		}
 	if(isDebug) log.debug("updated...")
-	if(isDebug) log.debug("Configuring IP: ${ip}, Code: ${masterCode}, Password: ${passwd}")
 	unschedule()
 	if(isDisabled) {
+		state.clear()
 		telnetClose()
-		log.debug("Envisalink is disabled!!")
+		log.info("Envisalink is disabled!!")
 		return
 	}
+	if(isDebug) log.debug("Configuring IP: ${ip}, Code: ${masterCode}, Password: ${passwd}")
 		
 	initialize()
 	log.debug("deviceNetworkId ${device.deviceNetworkId}")
+
+	if (installerCode) {
+		//setDelays(entry_delay1, entry_delay2, exit_delay)
+	}
+}
+def setPoll() {
+	unschedule(poll)
 	switch(poll_Rate) {
 		case "0" :
 			if(isDebug) log.debug("Envisalink Polling is Disabled")
+			return false
 			break
 		case "1" :
 			runEvery1Minute(poll)
@@ -151,10 +164,7 @@ def updated() {
 			if(isDebug) log.debug("Poll Rate set at 30 minutes")
 			break
 	}
-
-	if (installerCode) {
-		//setDelays(entry_delay1, entry_delay2, exit_delay)
-	}
+	return true
 }
 
 def initialize() {
@@ -708,6 +718,7 @@ def parse(String message) {
 							break
 						case 1:			//  Password Correct
 							if(isDebug) log.debug(LOGINSUCCESSFUL)
+							runIn(5, StatusReport)
 							break
 						case  2:			//  Time out
 							logError(LOGINTIMEOUT)
@@ -1013,14 +1024,16 @@ private sendProgrammingMessage(String s){
 
 def telnetConnection(){
 	if(device.currentValue("networkStatus") != "offline") {
-		send_Evt(name: "networkStatus", value: "offline")
 		telnetClose()
 		pauseExecution(5000)
 		}
+	else
+	  logError("Telnet is restarting...")
 	try {
 		//open telnet connection
 		telnetConnect([termChars:[13,10]], ip, 4025, null, null)
-		runIn(10, StatusReport)
+		send_Evt(name: "networkStatus", value: "login")
+		setPoll()
 	} catch(e) {
 		logError("initialize error: ${e.message}")
 	}
@@ -1035,8 +1048,10 @@ def telnetStatus(String status){
 		send_Evt(name: "networkStatus", value: "offline")
 	}
 	if(!isDisabled) {
+		send_Evt(name: "networkStatus", value: "offline")
+		telnetClose()
 		logError("Telnet is restarting...")
-		runIn(15, telnetConnection)
+//		runIn(15, telnetConnection)
 		}
 }
 
@@ -1124,6 +1139,7 @@ private getReTry(Boolean inc){
 	def reTry = (state.reTryCount ?: 0).toInteger()
 	if (inc) reTry++
 	state.reTryCount = reTry
+ log.debug("reTry=$state.reTry")
 	return reTry
 }
 
